@@ -1,0 +1,26 @@
+{
+  "name": "ActionLib",
+  "version": "1.0.1",
+  "description": "Library for asyncronous method execution",
+  "keywords": "",
+  "repository":
+  {
+    "type": "git",
+    "url": "https://github.com/awesomeyooner/ActionLib.git"
+  },
+  "authors":
+  [
+    {
+      "name": "Aaron Yoon",
+      "email": "aaronyoon324@gmail.com",
+      "url": "https://awesomeyooner.github.io/contact.html",
+      "maintainer": true
+    }
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "awesomeyooner/EmbeddedLib": "*" 
+  },
+  "frameworks": "*",
+  "platforms": "*"
+}
