@@ -13,13 +13,24 @@ class ActionManager
 {
     public:
         
-        std::vector<Action> m_actions;
+        static std::vector<Action> m_actions;
 
-        StatusCode update();
+        static void init();
+        
+        static StatusCode update();
+
+        /**
+         * @brief Add an action to the list of actions. This function is
+         * NON BLOCKING (should be), since all of the function callbacks are handled
+         * in `update`
+         * 
+         * @param action 
+         */
+        static void add(Action action);
 
     private:
         
-        double m_prev_timestamp = 0;
+        static double m_prev_timestamp;
 
 
 }; // class ActionManager

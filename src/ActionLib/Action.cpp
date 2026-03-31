@@ -1,15 +1,56 @@
 #include "ActionLib/Action.hpp"
 
+#include "EmbeddedLib/communication/Serial.hpp"
 
-StatusCode Action::init(double timestamp)
+Action::Action(double update_every, int repeat_n_times)
+{
+    m_update_every = update_every;
+    m_repeat = repeat_n_times;
+
+} // end of "Action(double, double)"
+
+
+Action Action::run_once()
+{
+    return Action(0, 1);   
+
+} // end of "run_once()"
+
+
+void Action::link_init(std::function<StatusedValue<bool>(double, double)> func)
+{
+    m_on_init = func;
+
+} // end of "link_init(std::function<StatusedValue<bool>(double, double)>)"
+
+
+void Action::link_callback(std::function<StatusedValue<bool>(double, double)> func)
+{
+    m_on_callback = func;
+
+} // end of "link_callback(std::function<StatusedValue<bool>(double, double)>)"
+
+
+void Action::link_finish(std::function<StatusCode(double, double)> func)
+{
+    m_on_finish = func;
+
+} // end of "link_finish(std::function<StatusedValue<bool>(double, double)>)"
+
+
+StatusCode Action::init(double timestamp, double time_since_last)
 {
     m_is_active = true;
     m_is_finished = false;
 
+    m_time_when_started = timestamp;
+
+    m_num_calls = 0;
+    
     // If m_on_init is set, then call it
     if(m_on_init)
     {
-        return m_on_init(timestamp).status;
+        return m_on_init(timestamp, time_since_last).status;
     }
 
     // Just default to OK   
@@ -20,20 +61,85 @@ StatusCode Action::init(double timestamp)
 
 StatusCode Action::update(double timestamp, double time_since_last)
 {
-    // If inactive
-    // Then do nothing
-    if(!m_is_active)
+
+    // If inactive and finished
+    // Then that means there's nothing to do
+    // So this action is waiting to be restarted to deleted
+    if(!m_is_active && m_is_finished)
+        return StatusCode::OK;
+    // If not active nor finished
+    // That means this action is uninitialized
+    // So initialize it
+    else if(!m_is_active && !m_is_finished)
+        init(timestamp, time_since_last);
+    // If the difference between the last call and now is less than the update every,
+    // Then don't call the update function since we'd be double dipping on calls
+    else if(m_time_since_last_call != 0 && timestamp - m_time_since_last_call < m_update_every)
         return StatusCode::OK;
 
-    double mod_remainder = std::remainder(timestamp, m_update_every);
+    if(m_update_every == 0)
+    {
+        StatusedValue<bool> callback_status = m_on_callback(timestamp, time_since_last);
+
+        m_time_since_last_call = timestamp;
+
+        // If the callback signaled finished
+        // Then kill this action
+        if(callback_status.value == true)
+        {
+            kill();
+            return callback_status.status;
+        }
+
+        if(m_repeat != -1)
+        {
+            // Increment the number of calls that have been... called
+            m_num_calls++;
+
+            // If the number of calls equals or exceeds the number of calls until finished
+            // Then kill this action
+            if(m_num_calls >= m_repeat)
+            {
+                kill();
+                return callback_status.status;
+            }
+        }
+
+        return callback_status.status;
+    }
+
+    double mod_remainder = std::fmod(timestamp - m_time_since_last_call, m_update_every);
 
     // If mod_remainder is within TIME_WINDOW (close enough to 0)
     // That means that the current timestamp is a multiple of `m_update_every`
     // Meaning it has elapsed the proper amount of time for the callback
-
     if(mod_remainder < TIME_WINDOW && m_on_callback)
     {
         StatusedValue<bool> callback_status = m_on_callback(timestamp, time_since_last);
+
+        m_time_since_last_call = timestamp;
+
+        // If the callback signaled finished
+        // Then kill this action
+        if(callback_status.value == true)
+        {
+            kill();
+            return callback_status.status;
+        }
+
+        if(m_repeat != -1)
+        {
+            // Increment the number of calls that have been... called
+            m_num_calls++;
+
+            // If the number of calls equals or exceeds the number of calls until finished
+            // Then kill this action
+            if(m_num_calls >= m_repeat)
+            {
+                kill();
+                return callback_status.status;
+            }
+        }
     }
 
 } // end of "update(double, double)"
@@ -52,9 +158,12 @@ StatusCode Action::finish(double timestamp, double time_since_last)
 } // end of "finish(double, double)"
 
 
-void Action::restart(double timestamp)
+void Action::restart(double timestamp, double time_since_last)
 {
-    init(timestamp);
+    m_is_active = false;
+    m_is_finished = false;
+
+    update(timestamp, time_since_last);
 
 } // end of "restart()"
 
@@ -62,6 +171,7 @@ void Action::restart(double timestamp)
 void Action::kill()
 {
     m_is_active = false;
+    m_is_finished = true;
 
 } // end of "kill()"
 
