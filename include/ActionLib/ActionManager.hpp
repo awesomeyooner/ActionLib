@@ -13,10 +13,21 @@ class ActionManager
 {
     public:
         
+        // All of the actions to execute
         static std::vector<Action> m_actions;
 
+        /**
+         * @brief Sets the current timestamp
+         * 
+         */
         static void init();
         
+        /**
+         * @brief Calls all of the actions' update functions. This method is BLOCKING, and
+         * is what actually handles all of the expensive calls
+         * 
+         * @return `StatusCode` OK if all actions were OK 
+         */
         static StatusCode update();
 
         /**
@@ -30,6 +41,7 @@ class ActionManager
 
     private:
         
+        // The timestamp of the previous loop in seconds
         static double m_prev_timestamp;
 
 

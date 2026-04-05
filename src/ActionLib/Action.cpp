@@ -188,3 +188,11 @@ bool Action::is_finished()
     return m_is_finished;
 
 } // end of "is_finished()"
+
+
+bool Action::has_initialized()
+{
+    // Not active and not finished means it hasn't started, aka not init
+    return !m_is_active && !m_is_finished;
+
+} // end of "has_initialized()"
