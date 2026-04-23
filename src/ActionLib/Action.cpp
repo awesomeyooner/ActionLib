@@ -17,6 +17,43 @@ Action Action::run_once()
 } // end of "run_once()"
 
 
+Action Action::run_once(std::function<void()> func)
+{
+    Action action{0, 1};
+
+    // Create the proper callback with the correct params and arguments
+    // but all it does is just call the function
+    std::function<StatusedValue<bool>(double, double)> callback = [func](double timestamp, double time_since_last) -> StatusedValue<bool>
+    {
+        func();
+
+        return StatusedValue<bool>{false, StatusCode::OK};
+    };
+
+    action.link_callback(callback);
+
+    return action;
+
+} // end of "run_once(std::function<void()>)"
+
+
+Action Action::run_once(std::function<void(double)> func)
+{
+    Action action{0, 1};
+
+    // Create the proper callback with the correct params and arguments
+    // but all it does is just call the function
+    std::function<StatusedValue<bool>(double, double)> callback = [func](double timestamp, double time_since_last) -> StatusedValue<bool>
+    {
+        func(timestamp);
+
+        return StatusedValue<bool>{false, StatusCode::OK};
+    };
+
+    action.link_callback(callback);
+} // end of "run_once(std::function<void(double)>)"
+
+
 void Action::link_init(std::function<StatusedValue<bool>(double, double)> func)
 {
     m_on_init = func;

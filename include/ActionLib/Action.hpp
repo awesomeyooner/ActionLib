@@ -33,6 +33,24 @@ class Action
         static Action run_once();
 
         /**
+         * @brief Creates a new action that only runs once with the given callback
+         * 
+         * @param func `std::function<void()>` Simple function to run with no returns nor params
+         * 
+         * @return `Action` The newly created action 
+         */
+        static Action run_once(std::function<void()> func);
+
+        /**
+         * @brief Creates a new action that only runs once with the given callback
+         * 
+         * @param func `std::function<void(double)>` Simple function that runs with no return but one double
+         * that represents the time when this action was called
+         * @return `Action` The newly created action 
+         */
+        static Action run_once(std::function<void(double)> func);
+
+        /**
          * @brief Link the initialize function.
          * 
          * @param func `std::function<StatusedValue<bool>(double, double)>` The init function.
