@@ -51,6 +51,9 @@ Action Action::run_once(std::function<void(double)> func)
     };
 
     action.link_callback(callback);
+
+    return action;
+
 } // end of "run_once(std::function<void(double)>)"
 
 
@@ -178,6 +181,8 @@ StatusCode Action::update(double timestamp, double time_since_last)
             }
         }
     }
+
+    return StatusCode::OK;
 
 } // end of "update(double, double)"
 
