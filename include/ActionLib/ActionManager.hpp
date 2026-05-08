@@ -39,10 +39,17 @@ class ActionManager
          */
         static void add(Action action);
 
+        static int get_size();
+
     private:
+
+        // Max number of actions in the list
+        static constexpr int MAX_ACTIONS = 50; // 5 ms
         
         // The timestamp of the previous loop in seconds
         static double m_prev_timestamp;
+
+        static void erase_actions(const std::vector<int>& indexes);
 
 
 }; // class ActionManager

@@ -10,6 +10,25 @@ Action::Action(double update_every, int repeat_n_times)
 } // end of "Action(double, double)"
 
 
+Action::Action(const Action& other)
+{
+    m_repeat = other.m_repeat;
+    m_num_calls = other.m_num_calls;
+    m_update_every = other.m_update_every;
+
+    m_time_since_last_call = other.m_time_since_last_call;
+    m_time_when_started = other.m_time_when_started;
+
+    m_is_active = other.m_is_active;
+    m_is_finished = other.m_is_finished;
+
+    m_on_init = other.m_on_init;
+    m_on_callback = other.m_on_callback;
+    m_on_finish = other.m_on_finish;
+
+} // end of Copy Constructor
+
+
 Action Action::run_once()
 {
     return Action(0, 1);   
@@ -43,7 +62,7 @@ Action Action::run_once(std::function<void(double)> func)
 
     // Create the proper callback with the correct params and arguments
     // but all it does is just call the function
-    std::function<StatusedValue<bool>(double, double)> callback = [func](double timestamp, double time_since_last) -> StatusedValue<bool>
+    std::function<StatusedValue<bool>(double, double)> callback = [func = std::move(func)](double timestamp, double time_since_last) -> StatusedValue<bool>
     {
         func(timestamp);
 
@@ -117,45 +136,15 @@ StatusCode Action::update(double timestamp, double time_since_last)
     else if(m_time_since_last_call != 0 && timestamp - m_time_since_last_call < m_update_every)
         return StatusCode::OK;
 
-    if(m_update_every == 0)
-    {
-        StatusedValue<bool> callback_status = m_on_callback(timestamp, time_since_last);
-
-        m_time_since_last_call = timestamp;
-
-        // If the callback signaled finished
-        // Then kill this action
-        if(callback_status.value == true)
-        {
-            kill();
-            return callback_status.status;
-        }
-
-        if(m_repeat != -1)
-        {
-            // Increment the number of calls that have been... called
-            m_num_calls++;
-
-            // If the number of calls equals or exceeds the number of calls until finished
-            // Then kill this action
-            if(m_num_calls >= m_repeat)
-            {
-                kill();
-                return callback_status.status;
-            }
-        }
-
-        return callback_status.status;
-    }
-
     double mod_remainder = std::fmod(timestamp - m_time_since_last_call, m_update_every);
 
     // If mod_remainder is within TIME_WINDOW (close enough to 0)
     // That means that the current timestamp is a multiple of `m_update_every`
     // Meaning it has elapsed the proper amount of time for the callback
-    if(mod_remainder < TIME_WINDOW && m_on_callback)
-    {
+    if((m_update_every == 0 || mod_remainder < TIME_WINDOW) && m_on_callback)
+    {        
         StatusedValue<bool> callback_status = m_on_callback(timestamp, time_since_last);
+        // StatusedValue<bool> callback_status{false, StatusCode::OK};
 
         m_time_since_last_call = timestamp;
 

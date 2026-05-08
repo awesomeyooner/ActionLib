@@ -25,6 +25,10 @@ class Action
          */
         Action(double update_every = 0, int repeat_n_times = -1);
 
+        Action(const Action& src);
+
+        ~Action() = default;
+
         /**
          * @brief Creates a new action that only runs once
          * 
@@ -150,10 +154,10 @@ class Action
          */
         void restart(double timestamp, double time_since_last);
 
-    private:
+    protected:
 
         // How far the modulus can differ for the callback to be called (in seconds)
-        static constexpr double TIME_WINDOW = 0.0001; // 5 ms
+        static constexpr double TIME_WINDOW = 0.005; // 5 ms
 
         // The number of times this function should repeat before finishing
         // If this number is -1, then that means indefinite
@@ -164,7 +168,7 @@ class Action
 
         // When to call the callback (in seconds)
         // Ex: `update_every = 1.5` Means the callback gets called every `1.5` seconds
-        double m_update_every;
+        double m_update_every = 0;
 
         // The time since the last callback was called (in seconds)
         // This is NOT `time_since_last` as that refers to the last iteration

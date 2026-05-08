@@ -10,6 +10,8 @@ void ActionManager::init()
 {
     m_prev_timestamp = System::get_seconds();
 
+    m_actions.reserve(MAX_ACTIONS);
+
 } // end of "init()"
 
 
@@ -22,6 +24,8 @@ StatusCode ActionManager::update()
     // Assume all actions return OK
     // If one isn't OK, then update this variable
     bool all_actions_OK = true;
+
+    std::vector<int> indexes_to_erase;
 
     for(int i = 0; i < m_actions.size(); i++)
     {
@@ -50,10 +54,13 @@ StatusCode ActionManager::update()
             if(finish_status != StatusCode::OK)
                 all_actions_OK = false;
 
-            // Remove this action from the list
-            m_actions.erase(m_actions.begin() + i);
+            // Prepare to remove this action from the list
+            indexes_to_erase.push_back(i);
         }
+
     }
+
+    erase_actions(indexes_to_erase);
 
     // Refresh the previous timestamp with the latest one
     m_prev_timestamp = timestamp;
@@ -67,6 +74,25 @@ StatusCode ActionManager::update()
 
 void ActionManager::add(Action action)
 {
-    m_actions.push_back(action);
+    if(m_actions.size() < MAX_ACTIONS)
+        m_actions.push_back(action);
 
 } // end of "add(Action)"
+
+
+int ActionManager::get_size()
+{
+    return m_actions.size();
+
+} // end of "get_size()"
+
+
+void ActionManager::erase_actions(const std::vector<int>& indexes)
+{
+    for(int i = 0; i < indexes.size(); i++)
+    {
+        int current_index = indexes.at(i);
+
+        m_actions.erase(m_actions.begin() + current_index);
+    }
+}
