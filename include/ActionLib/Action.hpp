@@ -7,8 +7,6 @@
 
 #include "EmbeddedLib/util/status.hpp"
 
-using namespace status_utils;
-
 
 class Action
 {
@@ -57,42 +55,42 @@ class Action
         /**
          * @brief Link the initialize function.
          * 
-         * @param func `std::function<StatusedValue<bool>(double, double)>` The init function.
+         * @param func `std::function<status_utils::StatusedValue<bool>(double, double)>` The init function.
          * Takes in two doubles, the first is the current timestamp in seconds and the second is
          * the time since the last main loop (NOT the last call of the callback but of the actual while loop).
-         * This should return `StatusedValue<bool>`, the `bool` part doesn't do anything
+         * This should return `status_utils::StatusedValue<bool>`, the `bool` part doesn't do anything
          */
-        void link_init(std::function<StatusedValue<bool>(double, double)> func);
+        void link_init(std::function<status_utils::StatusedValue<bool>(double, double)> func);
 
         /**
          * @brief Link the callback function.
          * 
-         * @param func `std::function<StatusedValue<bool>(double, double)>` The callback function.
+         * @param func `std::function<status_utils::StatusedValue<bool>(double, double)>` The callback function.
          * Takes in two doubles, the first is the current timestamp in seconds and the second is
          * the time since the last main loop (NOT the last call of the callback but of the actual while loop).
-         * This should return `StatusedValue<bool>`, returns true if the Action has finished, false otherwise.
-         * The StatusCode part is just for notifying ActionManager.
+         * This should return `status_utils::StatusedValue<bool>`, returns true if the Action has finished, false otherwise.
+         * The status_utils::StatusCode part is just for notifying ActionManager.
          */
-        void link_callback(std::function<StatusedValue<bool>(double, double)> func);
+        void link_callback(std::function<status_utils::StatusedValue<bool>(double, double)> func);
 
         /**
          * @brief Link the finish function / cleanup function.
          * 
-         * @param func `std::function<StatusCode<bool>(double, double)>` The function to call when finished.
+         * @param func `std::function<status_utils::StatusCode<bool>(double, double)>` The function to call when finished.
          * Takes in two doubles, the first is the current timestamp in seconds and the second is
          * the time since the last main loop (NOT the last call of the callback but of the actual while loop).
-         * This should return `StatusCode`.
+         * This should return `status_utils::StatusCode`.
          */
-        void link_finish(std::function<StatusCode(double, double)> func);
+        void link_finish(std::function<status_utils::StatusCode(double, double)> func);
 
         /**
          * @brief Initialize the timestamps. This function is called internally in `update`
          * 
          * @param timestamp `double` The current timestamp in seconds
          * @param time_since_last `double` The time since the last loop of the main while loop
-         * @return `StatusCode` The status of how this method ended 
+         * @return `status_utils::StatusCode` The status of how this method ended 
          */
-        StatusCode init(double timestamp, double time_since_last);
+        status_utils::StatusCode init(double timestamp, double time_since_last);
 
         /**
          * @brief Checks if this Action should be initialized and checks if the time is right to
@@ -100,9 +98,9 @@ class Action
          * 
          * @param timestamp `double` The current timestamp in seconds
          * @param time_since_last `double` The time since the last loop of the main while loop
-         * @return `StatusCode` The status of how this method ended 
+         * @return `status_utils::StatusCode` The status of how this method ended 
          */
-        StatusCode update(double timestamp, double time_since_last);
+        status_utils::StatusCode update(double timestamp, double time_since_last);
 
         /**
          * @brief Sets the states of this Action that it's finished and calls the finish callback
@@ -110,9 +108,9 @@ class Action
          * 
          * @param timestamp `double` The current timestamp in seconds
          * @param time_since_last `double` The time since the last loop of the main while loop
-         * @return `StatusCode` The status of how this method ended 
+         * @return `status_utils::StatusCode` The status of how this method ended 
          */
-        StatusCode finish(double timestamp, double time_since_last);
+        status_utils::StatusCode finish(double timestamp, double time_since_last);
 
         /**
          * @brief Gets if this Action is actively updating or not
@@ -186,14 +184,14 @@ class Action
 
         // The function to run when the action is first started
         // Returns `true` if this action should terminate
-        std::function<StatusedValue<bool>(double, double)> m_on_init;
+        std::function<status_utils::StatusedValue<bool>(double, double)> m_on_init;
 
         // The callback function whenever the time is right
         // Returns `true` if this action has finished
-        std::function<StatusedValue<bool>(double, double)> m_on_callback;
+        std::function<status_utils::StatusedValue<bool>(double, double)> m_on_callback;
 
         // The function to run when this action finishes
-        std::function<StatusCode(double, double)> m_on_finish;
+        std::function<status_utils::StatusCode(double, double)> m_on_finish;
 
 
 

@@ -28,7 +28,7 @@ class ActionManager
          * 
          * @return `StatusCode` OK if all actions were OK 
          */
-        static StatusCode update();
+        static status_utils::StatusCode update();
 
         /**
          * @brief Add an action to the list of actions. This function is

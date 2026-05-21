@@ -1,6 +1,9 @@
 #include "ActionLib/Action.hpp"
 
 
+using namespace status_utils;
+
+
 Action::Action(double update_every, int repeat_n_times)
 {
     m_update_every = update_every;
