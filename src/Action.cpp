@@ -1,6 +1,5 @@
 #include "ActionLib/Action.hpp"
 
-#include "EmbeddedLib/communication/Serial.hpp"
 
 Action::Action(double update_every, int repeat_n_times)
 {
