@@ -8,6 +8,19 @@
 #include "EmbeddedLib/util/status.hpp"
 
 
+/**
+ * @brief Describes the state an action is current in
+ * 
+ */
+enum class ActionState
+{
+    UNINITIALIZED, // Has not started and needs to be initialized
+    ACTIVE, // Keep updating this Action
+    FINISHED // Tells ActionManager to remove this command from the list
+
+}; // enum class ActionState
+
+
 class Action
 {
     public:
@@ -113,6 +126,13 @@ class Action
         status_utils::StatusCode finish(double timestamp, double time_since_last);
 
         /**
+         * @brief Gets the state of the Action
+         * 
+         * @return `ActionState` The state of the Action 
+         */
+        ActionState get_state();
+
+        /**
          * @brief Gets if this Action is actively updating or not
          * 
          * @return `true` If this Action is actively updating 
@@ -134,7 +154,7 @@ class Action
          * @return `true` If yes 
          * @return `false` Otherwise 
          */
-        bool has_initialized();
+        bool is_initialized();
 
         /**
          * @brief Sets the state of this Action that this Action is done. The actual
@@ -155,7 +175,7 @@ class Action
     protected:
 
         // How far the modulus can differ for the callback to be called (in seconds)
-        static constexpr double TIME_WINDOW = 0.005; // 5 ms
+        static constexpr double TIME_WINDOW = 0.001; // 1 ms
 
         // The number of times this function should repeat before finishing
         // If this number is -1, then that means indefinite
@@ -171,16 +191,13 @@ class Action
         // The time since the last callback was called (in seconds)
         // This is NOT `time_since_last` as that refers to the last iteration
         // of ActionManager
-        double m_time_since_last_call;
+        double m_time_since_last_call = 0;
 
         // The time when the action initialized / started
-        double m_time_when_started;
+        double m_time_when_started = 0;
 
-        // Flag for if this action should be updating or not
-        bool m_is_active = false;
-
-        // Flag for if this action has FINISHED, signalling to remove this action
-        bool m_is_finished = false;
+        // The current state of this Action
+        ActionState m_state = ActionState::UNINITIALIZED;
 
         // The function to run when the action is first started
         // Returns `true` if this action should terminate

@@ -21,8 +21,7 @@ Action::Action(const Action& other)
     m_time_since_last_call = other.m_time_since_last_call;
     m_time_when_started = other.m_time_when_started;
 
-    m_is_active = other.m_is_active;
-    m_is_finished = other.m_is_finished;
+    m_state = other.m_state;
 
     m_on_init = other.m_on_init;
     m_on_callback = other.m_on_callback;
@@ -101,8 +100,7 @@ void Action::link_finish(std::function<StatusCode(double, double)> func)
 
 StatusCode Action::init(double timestamp, double time_since_last)
 {
-    m_is_active = true;
-    m_is_finished = false;
+    m_state = ActionState::ACTIVE;
 
     m_time_when_started = timestamp;
 
@@ -110,9 +108,7 @@ StatusCode Action::init(double timestamp, double time_since_last)
     
     // If m_on_init is set, then call it
     if(m_on_init)
-    {
         return m_on_init(timestamp, time_since_last).status;
-    }
 
     // Just default to OK   
     return StatusCode::OK;
@@ -122,54 +118,44 @@ StatusCode Action::init(double timestamp, double time_since_last)
 
 StatusCode Action::update(double timestamp, double time_since_last)
 {
+    StatusCode status = StatusCode::OK;
+    
+    if(!is_initialized())
+        if(init(timestamp, time_since_last) != StatusCode::OK)
+            status == StatusCode::FAILED;
 
-    // If inactive and finished
-    // Then that means there's nothing to do
-    // So this action is waiting to be restarted to deleted
-    if(!m_is_active && m_is_finished)
-        return StatusCode::OK;
-    // If not active nor finished
-    // That means this action is uninitialized
-    // So initialize it
-    else if(!m_is_active && !m_is_finished)
-        init(timestamp, time_since_last);
     // If the difference between the last call and now is less than the update every,
     // Then don't call the update function since we'd be double dipping on calls
-    else if(m_time_since_last_call != 0 && timestamp - m_time_since_last_call < m_update_every)
+    if(timestamp - m_time_since_last_call < m_update_every)
         return StatusCode::OK;
 
-    double mod_remainder = std::fmod(timestamp - m_time_since_last_call, m_update_every);
+    // If the timestamp is a multiple of m_update_every (close to 0)
+    // Then it should be called
+    // Remember that x % m == 0 means x is a multiple of m
+    double mod_remainder = m_update_every == 0 ? 0 : std::fmod(timestamp, m_update_every);
 
     // If mod_remainder is within TIME_WINDOW (close enough to 0)
     // That means that the current timestamp is a multiple of `m_update_every`
     // Meaning it has elapsed the proper amount of time for the callback
-    if((m_update_every == 0 || mod_remainder < TIME_WINDOW) && m_on_callback)
+    if(mod_remainder < TIME_WINDOW && m_on_callback)
     {        
         StatusedValue<bool> callback_status = m_on_callback(timestamp, time_since_last);
-        // StatusedValue<bool> callback_status{false, StatusCode::OK};
 
+        // Increment the number of calls since we just called it
+        m_num_calls++;
+        
+        // Save the time of calling the callback since we just called it
         m_time_since_last_call = timestamp;
 
         // If the callback signaled finished
+        // OR
+        // If this Action has a set number of calls and it has been exceeded
         // Then kill this action
-        if(callback_status.value == true)
+        if(callback_status.value == true || (m_repeat != -1 && m_num_calls >= m_repeat))
         {
-            kill();
-            return callback_status.status;
-        }
+            StatusCode finish_status = finish(timestamp, time_since_last);
 
-        if(m_repeat != -1)
-        {
-            // Increment the number of calls that have been... called
-            m_num_calls++;
-
-            // If the number of calls equals or exceeds the number of calls until finished
-            // Then kill this action
-            if(m_num_calls >= m_repeat)
-            {
-                kill();
-                return callback_status.status;
-            }
+            return combine_statuses({callback_status.status, finish_status});
         }
     }
 
@@ -180,8 +166,7 @@ StatusCode Action::update(double timestamp, double time_since_last)
 
 StatusCode Action::finish(double timestamp, double time_since_last)
 {
-    m_is_active = false;
-    m_is_finished = true;
+    m_state = ActionState::FINISHED;
 
     if(m_on_finish)
         return m_on_finish(timestamp, time_since_last);
@@ -193,8 +178,7 @@ StatusCode Action::finish(double timestamp, double time_since_last)
 
 void Action::restart(double timestamp, double time_since_last)
 {
-    m_is_active = false;
-    m_is_finished = false;
+    m_state = ActionState::UNINITIALIZED;
 
     update(timestamp, time_since_last);
 
@@ -203,29 +187,34 @@ void Action::restart(double timestamp, double time_since_last)
 
 void Action::kill()
 {
-    m_is_active = false;
-    m_is_finished = true;
+    m_state = ActionState::FINISHED;
 
 } // end of "kill()"
 
 
+ActionState Action::get_state()
+{
+    return m_state;
+
+} // end of "get_state()"
+
+
 bool Action::is_active()
 {
-    return m_is_active;
+    return m_state == ActionState::ACTIVE;
 
 } // end of "is_active()"
 
 
 bool Action::is_finished()
 {
-    return m_is_finished;
+    return m_state == ActionState::FINISHED;
 
 } // end of "is_finished()"
 
 
-bool Action::has_initialized()
+bool Action::is_initialized()
 {
-    // Not active and not finished means it hasn't started, aka not init
-    return !m_is_active && !m_is_finished;
+    return m_state != ActionState::UNINITIALIZED;
 
 } // end of "has_initialized()"

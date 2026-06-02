@@ -24,12 +24,19 @@ StatusCode ActionManager::update()
     double timestamp = System::get_seconds();
     double time_since_last = timestamp - m_prev_timestamp;
 
-    // Assume all actions return OK
-    // If one isn't OK, then update this variable
-    bool all_actions_OK = true;
+    // OK for now
+    // Will change if something comes up
+    StatusCode accumulated_status = StatusCode::OK;
 
     std::vector<int> indexes_to_erase;
 
+    /*
+    For every Action
+
+    - Call the update function
+    - If it failed, change the value of `accumulated_status`
+    - If the Action finished, queue it to be removed from the list
+    */
     for(int i = 0; i < m_actions.size(); i++)
     {
         // Get the current action
@@ -40,29 +47,19 @@ StatusCode ActionManager::update()
         // not this method
         StatusCode update_status = current_action.update(timestamp, time_since_last);
 
-        // If this update wasn't successful
-        // Then `all_actions_OK` is false
-        if(update_status != StatusCode::OK)
-            all_actions_OK = false;
+        accumulated_status = combine_statuses({accumulated_status, update_status});
 
         // If the action is done
-        // Then run the actions finished routine and remove it from the action list
+        // Then remove it from the action list
         if(current_action.is_finished())
         {
-            // Call the finish routine
-            StatusCode finish_status = current_action.finish(timestamp, time_since_last);
-
-            // If the action didn't finish properly
-            // Then `all_actions_OK` is false
-            if(finish_status != StatusCode::OK)
-                all_actions_OK = false;
-
             // Prepare to remove this action from the list
             indexes_to_erase.push_back(i);
         }
 
     }
 
+    // Erase all the actions that are finished
     erase_actions(indexes_to_erase);
 
     // Refresh the previous timestamp with the latest one
@@ -70,7 +67,7 @@ StatusCode ActionManager::update()
 
     // If OK, return OK
     // Else return FAILED
-    return all_actions_OK ? StatusCode::OK : StatusCode::FAILED;
+    return accumulated_status;
 
 } // end of "update()"
 
@@ -98,4 +95,5 @@ void ActionManager::erase_actions(const std::vector<int>& indexes)
 
         m_actions.erase(m_actions.begin() + current_index);
     }
-}
+    
+} // end of "erase_actions(const std::vector<int>& indexes)"

@@ -44,7 +44,7 @@ class ActionManager
     private:
 
         // Max number of actions in the list
-        static constexpr int MAX_ACTIONS = 50; // 5 ms
+        static constexpr int MAX_ACTIONS = 32;
         
         // The timestamp of the previous loop in seconds
         static double m_prev_timestamp;
