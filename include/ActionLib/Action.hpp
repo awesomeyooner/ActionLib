@@ -5,7 +5,7 @@
 #include <functional>
 #include <cmath>
 
-#include "EmbeddedLib/util/status.hpp"
+#include "EmbeddedLib/status.hpp"
 
 
 /**
